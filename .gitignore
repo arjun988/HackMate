@@ -1,0 +1,58 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+lib/
+lib64/
+python-eggs/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+venv.bak/
+env.bak/
+
+# IDE and editor folders
+.idea/
+.vscode/
+
+# PyCharm
+*.iml
+.idea/
+
+# VS Code settings
+.vscode/
+
+# macOS system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+
+# Environment variables
+.env
+.env.*
+
+# Flask instance folder
+instance/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Python type checking
+.mypy_cache/
+.pyre/
