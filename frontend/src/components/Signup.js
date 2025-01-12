@@ -62,8 +62,6 @@ function Signup() {
                             />
                         )}
                     </div>
-
-                    {/* Signup Button */}
                     <button
                         className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                         onClick={handleSignup}
@@ -71,17 +69,6 @@ function Signup() {
                         Signup
                     </button>
                 </div>
-
-                {/* Navigate to Login */}
-                <p className="text-gray-400 text-center mt-4">
-                    Already have an account?{" "}
-                    <span
-                        className="text-purple-500 hover:underline cursor-pointer"
-                        onClick={() => navigate("/login")}
-                    >
-                        Login
-                    </span>
-                </p>
             </div>
         </div>
     );

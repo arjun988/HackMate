@@ -8,6 +8,9 @@ import requests
 from dotenv import load_dotenv
 import json
 import regex as re
+import jwt
+from datetime import datetime, timedelta
+
 # Load environment variables
 load_dotenv()
 
@@ -46,6 +49,12 @@ def initialize_model():
 
 gpt = initialize_model()
 
+# Helper function to generate JWT token
+def generate_jwt_token(user_id):
+    expiration_time = datetime.utcnow() + timedelta(hours=1)  # Token expires in 1 hour
+    token = jwt.encode({'user_id': user_id, 'exp': expiration_time}, app.config['SECRET_KEY'], algorithm='HS256')
+    return token
+
 # Route for user signup
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -59,7 +68,9 @@ def signup():
     try:
         db.session.add(user)
         db.session.commit()
-        return jsonify({"message": "User created successfully"}), 201
+        # Generate JWT token
+        token = generate_jwt_token(user.id)
+        return jsonify({"message": "User created successfully", "token": token}), 201
     except:
         return jsonify({"message": "Username already exists"}), 400
 
@@ -72,13 +83,12 @@ def login():
 
     user = User.query.filter_by(username=username).first()
     if user and bcrypt.check_password_hash(user.password, password):
-        session['user_id'] = user.id
-        return jsonify({"message": "Login successful"}), 200
+        # Generate JWT token
+        token = generate_jwt_token(user.id)
+        return jsonify({"message": "Login successful", "token": token}), 200
     return jsonify({"message": "Invalid credentials"}), 401
 
 # Route to generate a problem statement
-import json
-
 @app.route('/generate_problem', methods=['POST'])
 def generate_problem():
     data = request.json
@@ -125,12 +135,13 @@ def extract_json_from_response(text):
             except json.JSONDecodeError:
                 continue
     return None
+
 # Route to execute code
 @app.route('/execute_code', methods=['POST'])
 def execute_code():
     data = request.json
-    language = data.get('language', 'python')  # Default language to 'python'
-    version = data.get('version', '3.10.0')   # Default version to '3.10.0'
+    language = data.get('language', 'javascript')  # Default language to 'python'
+    version = data.get('version', '1.32.3')   # Default version to '3.10.0'
     code = data.get('code')
 
     # Use Piston API for execution
@@ -161,7 +172,6 @@ def execute_code():
         print(f"Exception occurred: {e}")
         return jsonify({"message": "Internal server error", "error": str(e)}), 500
 
-# Route to suggest code improvements
 # Route to suggest code improvements
 @app.route('/suggest_improvement', methods=['POST'])
 def suggest_improvement():
