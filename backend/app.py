@@ -6,7 +6,8 @@ import google.generativeai as ggi
 import os
 import requests
 from dotenv import load_dotenv
-
+import json
+import regex as re
 # Load environment variables
 load_dotenv()
 
@@ -76,20 +77,54 @@ def login():
     return jsonify({"message": "Invalid credentials"}), 401
 
 # Route to generate a problem statement
+import json
+
 @app.route('/generate_problem', methods=['POST'])
 def generate_problem():
     data = request.json
     language = data['language']
     difficulty = data['difficulty']
 
-    prompt = f"Generate a {difficulty} coding problem in {language}. Only provide the problem statement , input and expected output"
+    prompt = f'''Generate a {difficulty} coding problem in {language}. Return the problem statement, input, output, and output explanation in JSON format:
+    {{
+        "problem_statement": "",
+        "input": "",
+        "output": "",
+        "output_explanation": ""
+    }}
+    '''
     response = gpt.send_message(prompt)
 
     if response:
-        problem_statement = response.text
-        return jsonify({"problem_statement": problem_statement}), 200
+        # Extract JSON from the response
+        json_string = extract_json_from_response(response.text)
+        
+        if json_string:
+            try:
+                problem_data = json.loads(json_string)
+                return jsonify(problem_data), 200
+            except json.JSONDecodeError:
+                return jsonify({"message": "Failed to parse JSON from response"}), 400
+        
+        # If no JSON found, return an error
+        return jsonify({"message": "No JSON found in the response"}), 400
+    
     return jsonify({"message": "Failed to generate problem"}), 500
 
+def extract_json_from_response(text):
+    # Regular expression to find JSON-like structures
+    pattern = r'\{[^{}]*\}'
+    matches = re.findall(pattern, text)
+    
+    if matches:
+        # Try to validate and return the first valid JSON
+        for match in matches:
+            try:
+                json.loads(match)
+                return match
+            except json.JSONDecodeError:
+                continue
+    return None
 # Route to execute code
 @app.route('/execute_code', methods=['POST'])
 def execute_code():
@@ -127,23 +162,52 @@ def execute_code():
         return jsonify({"message": "Internal server error", "error": str(e)}), 500
 
 # Route to suggest code improvements
+# Route to suggest code improvements
 @app.route('/suggest_improvement', methods=['POST'])
 def suggest_improvement():
     data = request.json
-    code = data['code']
-    problem_statement = data.get('problem_statement', '')
+    code = data.get('code')
+    problem_data = data.get('problem_data')
 
-    if not problem_statement:
-        return jsonify({"message": "Problem statement is required"}), 400
+    # Check if both code and problem_data exist
+    if not code or not problem_data:
+        return problem_data, 400
 
-    prompt = f"Given the following problem statement: '{problem_statement}', suggest improvements for the code below, including optimizations and solutions with better time and space complexity:\n{code}"
+    # Parse the problem_data JSON string
+    try:
+        parsed_problem_data = json.loads(problem_data)
+    except json.JSONDecodeError:
+        return problem_data, 400
+
+    # Extract individual components
+    problem_statement = parsed_problem_data.get('problem_statement')
+    input_data = parsed_problem_data.get('input')
+    output_data = parsed_problem_data.get('output')
+    output_explanation = parsed_problem_data.get('output_explanation')
+
+    # Check if all required components are present
+    if not all([problem_statement, input_data, output_data, output_explanation]):
+        return problem_data, 400
+
+    # Build the prompt using structured problem data
+    prompt = f"""
+    Given the following problem statement:
+    Problem Statement: {problem_statement}
+    Input: {input_data}
+    Output: {output_data}
+    Output Explanation: {output_explanation}
+    
+    Suggest improvements for the code below, including optimizations and solutions with better time and space complexity:
+    {code}
+    """
+
+    # Send the request to Gemini for suggestions
     response = gpt.send_message(prompt)
 
     if response:
-        suggestions = response.text
-        return jsonify({"suggestions": suggestions}), 200
-    return jsonify({"message": "Failed to generate suggestions"}), 500
-
+        return response.text, 200
+    
+    return "Failed to generate suggestions", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
