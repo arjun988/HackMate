@@ -320,7 +320,7 @@ const LearnJavaScript = () => {
 
   const executeCode = async (code) => {
     try {
-      const response = await axios.post('http://127.0.0.1:5000/execute_code', {
+      const response = await axios.post('http://127.0.0.1:5000/execute_javascriptcode', {
         language: 'javascript',
         code
       });

@@ -172,6 +172,41 @@ def execute_code():
         print(f"Exception occurred: {e}")
         return jsonify({"message": "Internal server error", "error": str(e)}), 500
 
+@app.route('/execute_javascriptcode', methods=['POST'])
+def execute_code():
+    data = request.json
+    language = data.get('language', 'javascript')  # Default language to 'python'
+    version = data.get('version', '1.32.3')   # Default version to '3.10.0'
+    code = data.get('code')
+
+    # Use Piston API for execution
+    execution_api_url = "https://emkc.org/api/v2/piston/execute"
+    payload = {
+        "language": language,
+        "version": version,  # Use the specified version or default to '3.10.0'
+        "files": [             # Provide the source code as an array of file objects
+            {
+                "name": "main",
+                "content": code
+            }
+        ]
+    }
+
+    try:
+        response = requests.post(execution_api_url, json=payload)
+        response_data = response.json()
+        
+        if response.status_code == 200:
+            # Extracting the correct output from response
+            output = response_data.get('run', {}).get('stdout', 'No output from the code')
+            return jsonify({"output": output}), 200
+        else:
+            print(f"Error from Piston API: {response_data}")
+            return jsonify({"message": "Code execution failed", "details": response_data}), 500
+    except Exception as e:
+        print(f"Exception occurred: {e}")
+        return jsonify({"message": "Internal server error", "error": str(e)}), 500
+
 # Route to suggest code improvements
 @app.route('/suggest_improvement', methods=['POST'])
 def suggest_improvement():
