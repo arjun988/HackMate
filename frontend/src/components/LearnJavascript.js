@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Editor } from "@monaco-editor/react";
 import axios from 'axios';
-import Modal from 'react-modal';
+import { BookOpen, Play, Eye, X } from 'lucide-react';
 
 const chapters = [
     {
@@ -191,99 +191,139 @@ const chapters = [
     },
   ];
   
-const LearnJavaScript = () => {
-  const [code, setCode] = useState('');
-  const [output, setOutput] = useState('');
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [solution, setSolution] = useState('');
-
-  const executeCode = async (code) => {
-    try {
-      const response = await axios.post('http://127.0.0.1:5000/execute_code', {
-        language: 'javascript',
-        code
-      });
-      setOutput(response.data.output);
-    } catch (error) {
-      console.error('Execution error:', error);
-      setOutput('Error executing the code.');
-    }
-  };
-
-  const openSolutionModal = (solution) => {
-    setSolution(solution);
-    setModalIsOpen(true);
-  };
-
-  const closeSolutionModal = () => {
-    setModalIsOpen(false);
-  };
-
-  return (
-    <div className="bg-gray-800 text-white p-6">
-      <h1 className="text-2xl font-bold mb-4">Learn JavaScript</h1>
-      {chapters.map((chapter, index) => (
-        <div key={index} className="mb-8 border-b border-gray-600 pb-4">
-          <h2 className="text-xl font-semibold mb-2">{chapter.title}</h2>
-          <p className="text-gray-300 mb-2">{chapter.introduction}</p>
-          <p className="text-gray-400 mb-4">{chapter.explanation}</p>
-
-          <h3 className="font-semibold mb-2">Code Example:</h3>
-          <pre className="bg-gray-700 p-4 rounded mb-4 text-sm">
-            <code>{chapter.codeSnippet}</code>
-          </pre>
-
-          <h3 className="font-semibold mb-2">Problem:</h3>
-          <p className="text-gray-300 mb-4">{chapter.problemStatement}</p>
-
-          <Editor
-           height="300px"
-                language='javascript'
-                value={code}
-                onChange={(value) => setCode(value)}
-                theme="vs-dark"
-                className="rounded-lg"
-          />
-
-          <button
-            onClick={() => executeCode(code)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 mt-4 rounded"
-          >
-            Run Code
-          </button>
-
-          <div className="mt-4">
-            <h4 className="font-semibold">Output:</h4>
-            <pre className="bg-gray-700 p-4 rounded text-sm">{output}</pre>
+  const LearnJavaScript = () => {
+    const [code, setCode] = useState('');
+    const [output, setOutput] = useState('');
+    const [modalIsOpen, setModalIsOpen] = useState(false);
+    const [solution, setSolution] = useState('');
+  
+    const executeCode = async (code) => {
+      try {
+        const response = await axios.post('http://127.0.0.1:5000/execute_code', {
+          language: 'javascript',
+          code
+        });
+        setOutput(response.data.output);
+      } catch (error) {
+        console.error('Execution error:', error);
+        setOutput('Error executing the code.');
+      }
+    };
+  
+    const openSolutionModal = (solution) => {
+      setSolution(solution);
+      setModalIsOpen(true);
+    };
+  
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+              Learn JavaScript
+            </h1>
           </div>
-
-          <button
-            onClick={() => openSolutionModal(chapter.solution)}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 mt-4 rounded"
-          >
-            View Solution
-          </button>
-
-          <Modal
-            isOpen={modalIsOpen}
-            onRequestClose={closeSolutionModal}
-            contentLabel="Solution Modal"
-            className="bg-gray-900 text-white p-6 rounded-lg max-w-lg mx-auto"
-            overlayClassName="bg-black bg-opacity-50 fixed inset-0 flex items-center justify-center"
-          >
-            <h2 className="text-lg font-bold mb-4">Solution</h2>
-            <pre className="bg-gray-700 p-4 rounded mb-4 text-sm">{solution}</pre>
-            <button
-              onClick={closeSolutionModal}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-            >
-              Close
-            </button>
-          </Modal>
+  
+          <div className="space-y-12">
+            {chapters.map((chapter, index) => (
+              <div key={index} className="bg-black/30 backdrop-blur-sm border border-gray-800 rounded-xl p-6 space-y-6">
+                <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+                  {chapter.title}
+                </h2>
+                
+                <div className="space-y-4">
+                  <p className="text-gray-300">{chapter.introduction}</p>
+                  <p className="text-gray-400">{chapter.explanation}</p>
+                </div>
+  
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">Code Example</h3>
+                  <div className="bg-gray-900/50 rounded-lg p-4">
+                    <pre className="text-gray-300">
+                      <code>{chapter.codeSnippet}</code>
+                    </pre>
+                  </div>
+                </div>
+  
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-white">Challenge</h3>
+                  <p className="text-gray-300">{chapter.problemStatement}</p>
+                </div>
+  
+                <div className="space-y-4">
+                  <Editor
+                    height="300px"
+                    language="javascript"
+                    value={code}
+                    onChange={(value) => setCode(value)}
+                    theme="vs-dark"
+                    className="rounded-lg overflow-hidden"
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                    }}
+                  />
+  
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => executeCode(code)}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg text-white hover:opacity-90 transition-opacity"
+                    >
+                      <Play className="w-4 h-4" />
+                      Run Code
+                    </button>
+  
+                    <button
+                      onClick={() => openSolutionModal(chapter.solution)}
+                      className="flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg text-gray-300 hover:text-white hover:border-gray-600 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Solution
+                    </button>
+                  </div>
+  
+                  {output && (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-white">Output:</h4>
+                      <div className="bg-gray-900/50 rounded-lg p-4">
+                        <pre className="text-gray-300">{output}</pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-    </div>
-  );
-};
-
-export default LearnJavaScript;
+  
+        {modalIsOpen && (
+          <div className="fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setModalIsOpen(false)} />
+            <div className="fixed inset-0 overflow-y-auto">
+              <div className="flex min-h-full items-center justify-center p-4">
+                <div className="relative bg-gray-900 rounded-xl p-6 max-w-2xl w-full">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-white">Solution</h2>
+                    <button
+                      onClick={() => setModalIsOpen(false)}
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <pre className="bg-gray-800 p-4 rounded-lg text-gray-300 overflow-x-auto">
+                    {solution}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  export default LearnJavaScript;

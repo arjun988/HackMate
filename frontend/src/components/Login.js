@@ -1,63 +1,65 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Eye, EyeOff, User, Lock } from "lucide-react";
-import { useNavigate } from "react-router-dom"; // For navigation
+import { Eye, EyeOff, User, Lock, LogIn } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 function Login({ onLogin }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const navigate = useNavigate(); // Initialize navigation
+    const navigate = useNavigate();
 
     const handleLogin = async () => {
+        setIsLoading(true);
         try {
             const response = await axios.post("http://127.0.0.1:5000/login", { username, password });
-            alert(response.data.message);
             if (response.status === 200) {
-                // Store token in localStorage
                 localStorage.setItem('auth_token', response.data.token);
                 localStorage.setItem('isLoggedIn', true);
                 onLogin();
-                // Navigate to the main page upon successful login
                 navigate("/");
             }
         } catch (error) {
             const errorMessage = error.response?.data?.message || "An error occurred";
             alert(errorMessage);
-
-            // Check if the error indicates the account doesn't exist
             if (error.response?.status === 404 || errorMessage.toLowerCase().includes("account does not exist")) {
-                // Redirect to signup page
                 navigate("/signup");
             }
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleSignupRedirect = () => {
-        // Redirect to the signup page
-        navigate("/signup");
-    };
-
     return (
-        <div className="min-h-screen flex items-center justify-center bg-black">
-            <div className="w-full max-w-sm bg-gray-900 p-8 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-bold text-center text-white mb-6">Login</h2>
-                <div className="space-y-4">
-                    <div className="relative">
-                        <User className="absolute text-gray-400 left-3 top-3" />
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900">
+            <div className="w-full max-w-md p-8 backdrop-blur-sm bg-black/30 rounded-2xl shadow-2xl border border-gray-800">
+                <div className="flex flex-col items-center mb-8">
+                    <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center mb-4">
+                        <LogIn className="w-8 h-8 text-white" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+                        Welcome Back
+                    </h2>
+                </div>
+
+                <div className="space-y-6">
+                    <div className="relative group">
+                        <User className="absolute text-gray-400 left-3 top-3 group-focus-within:text-purple-400 transition-colors" />
                         <input
-                            className="w-full px-10 py-3 text-sm bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                            className="w-full px-10 py-3 bg-gray-900/50 text-gray-100 rounded-xl border border-gray-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-all placeholder:text-gray-500"
                             type="text"
                             placeholder="Username"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                         />
                     </div>
-                    <div className="relative">
-                        <Lock className="absolute text-gray-400 left-3 top-3" />
+
+                    <div className="relative group">
+                        <Lock className="absolute text-gray-400 left-3 top-3 group-focus-within:text-purple-400 transition-colors" />
                         <input
-                            className="w-full px-10 py-3 text-sm bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                            className="w-full px-10 py-3 bg-gray-900/50 text-gray-100 rounded-xl border border-gray-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-all placeholder:text-gray-500"
                             type={showPassword ? "text" : "password"}
                             placeholder="Password"
                             value={password}
@@ -65,28 +67,33 @@ function Login({ onLogin }) {
                         />
                         {showPassword ? (
                             <EyeOff
-                                className="absolute text-gray-400 right-3 top-3 cursor-pointer"
+                                className="absolute text-gray-400 right-3 top-3 cursor-pointer hover:text-gray-300 transition-colors"
                                 onClick={() => setShowPassword(false)}
                             />
                         ) : (
                             <Eye
-                                className="absolute text-gray-400 right-3 top-3 cursor-pointer"
+                                className="absolute text-gray-400 right-3 top-3 cursor-pointer hover:text-gray-300 transition-colors"
                                 onClick={() => setShowPassword(true)}
                             />
                         )}
                     </div>
+
                     <button
-                        className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className={`w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-purple-500/20 focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all transform hover:scale-[1.02] ${
+                            isLoading ? 'opacity-75 cursor-not-allowed' : ''
+                        }`}
                         onClick={handleLogin}
+                        disabled={isLoading}
                     >
-                        Login
+                        {isLoading ? 'Logging in...' : 'Login'}
                     </button>
-                    <div className="mt-4 text-center">
+
+                    <div className="mt-6 text-center">
                         <p className="text-sm text-gray-400">
                             Don't have an account?{" "}
                             <button
-                                onClick={handleSignupRedirect}
-                                className="text-purple-500 hover:text-purple-700"
+                                onClick={() => navigate("/signup")}
+                                className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 hover:from-purple-500 hover:to-blue-500 transition-all"
                             >
                                 Create Account
                             </button>
