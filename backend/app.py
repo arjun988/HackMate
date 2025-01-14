@@ -137,75 +137,86 @@ def extract_json_from_response(text):
     return None
 
 # Route to execute code
+# Mapping of file extensions for each language
+FILE_EXTENSIONS = {
+    "javascript": "js",
+    "cpp": "cpp",
+    "java": "java",
+    "python": "py"
+}
+
+# Mapping of languages to their versions
+LANGUAGE_VERSIONS = {
+    "javascript": "1.32.3",
+    "cpp": "10.2.0",
+    "java": "15.0.2",
+    "python": "3.10.0"
+}
+
 @app.route('/execute_code', methods=['POST'])
 def execute_code():
-    data = request.json
-    language = data.get('language', 'javascript')  # Default language to 'python'
-    version = data.get('version', '1.32.3')   # Default version to '3.10.0'
-    code = data.get('code')
-
-    # Use Piston API for execution
-    execution_api_url = "https://emkc.org/api/v2/piston/execute"
-    payload = {
-        "language": language,
-        "version": version,  # Use the specified version or default to '3.10.0'
-        "files": [             # Provide the source code as an array of file objects
-            {
-                "name": "main",
-                "content": code
-            }
-        ]
-    }
-
     try:
-        response = requests.post(execution_api_url, json=payload)
-        response_data = response.json()
+        data = request.json
+        language = data.get('language', 'python')
+        code = data.get('code')
+        stdin = data.get('stdin', '')
+
+        if not code:
+            return jsonify({"error": "No code provided"}), 400
+
+        if language not in LANGUAGE_VERSIONS:
+            return jsonify({"error": "Unsupported language"}), 400
+
+        # Create the payload for Piston API
+        payload = {
+            "language": language,
+            "version": LANGUAGE_VERSIONS[language],
+            "files": [
+                {
+                    "name": f"main.{FILE_EXTENSIONS[language]}",
+                    "content": code
+                }
+            ],
+            "stdin": stdin,
+            "args": [],
+            "compile_timeout": 10000,
+            "run_timeout": 3000,
+            "compile_memory_limit": -1,
+            "run_memory_limit": -1
+        }
+
+        # Make request to Piston API
+        response = requests.post(
+            "https://emkc.org/api/v2/piston/execute", 
+            json=payload,
+            headers={"Content-Type": "application/json"}
+        )
         
-        if response.status_code == 200:
-            # Extracting the correct output from response
-            output = response_data.get('run', {}).get('stdout', 'No output from the code')
-            return jsonify({"output": output}), 200
-        else:
-            print(f"Error from Piston API: {response_data}")
-            return jsonify({"message": "Code execution failed", "details": response_data}), 500
-    except Exception as e:
-        print(f"Exception occurred: {e}")
-        return jsonify({"message": "Internal server error", "error": str(e)}), 500
+        if response.status_code != 200:
+            return jsonify({
+                "error": "Execution failed",
+                "details": response.json()
+            }), response.status_code
 
-@app.route('/execute_javascriptcode', methods=['POST'])
-def execute_code():
-    data = request.json
-    language = data.get('language', 'javascript')  # Default language to 'python'
-    version = data.get('version', '1.32.3')   # Default version to '3.10.0'
-    code = data.get('code')
-
-    # Use Piston API for execution
-    execution_api_url = "https://emkc.org/api/v2/piston/execute"
-    payload = {
-        "language": language,
-        "version": version,  # Use the specified version or default to '3.10.0'
-        "files": [             # Provide the source code as an array of file objects
-            {
-                "name": "main",
-                "content": code
-            }
-        ]
-    }
-
-    try:
-        response = requests.post(execution_api_url, json=payload)
-        response_data = response.json()
+        result = response.json()
         
-        if response.status_code == 200:
-            # Extracting the correct output from response
-            output = response_data.get('run', {}).get('stdout', 'No output from the code')
-            return jsonify({"output": output}), 200
-        else:
-            print(f"Error from Piston API: {response_data}")
-            return jsonify({"message": "Code execution failed", "details": response_data}), 500
+        # Construct comprehensive output
+        output = {
+            "stdout": result.get("run", {}).get("stdout", ""),
+            "stderr": result.get("run", {}).get("stderr", ""),
+            "output": result.get("run", {}).get("output", ""),
+            "code": result.get("run", {}).get("code", None),
+            "signal": result.get("run", {}).get("signal", None)
+        }
+
+        return jsonify(output), 200
+
     except Exception as e:
-        print(f"Exception occurred: {e}")
-        return jsonify({"message": "Internal server error", "error": str(e)}), 500
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500
+    
 
 # Route to suggest code improvements
 @app.route('/suggest_improvement', methods=['POST'])

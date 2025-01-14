@@ -66,6 +66,7 @@ function ProblemStatement({ onProblemGenerated }) {
                     >
                         <option value="python">Python</option>
                         <option value="javascript">JavaScript</option>
+                        <option value="c++">C++</option>
                         <option value="java">Java</option>
                     </select>
                 </div>

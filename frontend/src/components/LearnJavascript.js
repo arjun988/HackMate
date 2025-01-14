@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Editor } from "@monaco-editor/react";
-import axios from 'axios';
+
 import { 
   BookOpen, 
   Play, 
@@ -304,13 +304,17 @@ try {
 
 
 const LearnJavaScript = () => {
-  const [code, setCode] = useState('');
-  const [output, setOutput] = useState('');
+  const [code, setCode] = useState("");
+  const [output, setOutput] = useState("");
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [solution, setSolution] = useState('');
+  const [solution, setSolution] = useState("");
+  const [language, setLanguage] = useState("javascript");
+  const [stdin, setStdin] = useState("");
   const [activeChapter, setActiveChapter] = useState(0);
+  const [executionError, setExecutionError] = useState("");
+  const [isExecuting, setIsExecuting] = useState(false);
   const [progress, setProgress] = useState(() => {
-    const saved = localStorage.getItem('jsProgress');
+    const saved = localStorage.getItem("jsProgress");
     return saved ? JSON.parse(saved) : new Array(chapters.length).fill(false);
   });
 
@@ -318,21 +322,60 @@ const LearnJavaScript = () => {
     localStorage.setItem('jsProgress', JSON.stringify(progress));
   }, [progress]);
 
-  const executeCode = async (code) => {
+  const executeCode = async () => {
+    setIsExecuting(true);
+    setExecutionError("");
+    setOutput("");
+    
     try {
-      const response = await axios.post('http://127.0.0.1:5000/execute_javascriptcode', {
-        language: 'javascript',
-        code
-      });
-      setOutput(response.data.output);
+        const response = await fetch("http://127.0.0.1:5000/execute_code", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ 
+                language, 
+                code,
+                stdin 
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Execution failed");
+        }
+
+        // Format the output
+        let formattedOutput = "";
+        
+        if (data.stdout) {
+            formattedOutput += `Program Output:\n${data.stdout}\n`;
+        }
+        
+        if (data.stderr) {
+            formattedOutput += `\nErrors/Warnings:\n${data.stderr}\n`;
+        }
+
+        if (data.code !== 0) {
+            setExecutionError(`Program exited with code ${data.code}`);
+        }
+
+        setOutput(formattedOutput || "Program executed with no output");
+
     } catch (error) {
-      setOutput('Error executing the code: ' + error.message);
+        setExecutionError(error.message);
+        console.error("Execution error:", error);
+    } finally {
+        setIsExecuting(false);
     }
-  };
+};
+
   const openSolutionModal = (solutionText) => {
-    setSolution(solutionText); // Set the solution to display in the modal
-    setModalIsOpen(true); // Open the modal
+    setSolution(solutionText);
+    setModalIsOpen(true);
   };
+
   const markChapterComplete = (index) => {
     const newProgress = [...progress];
     newProgress[index] = true;
@@ -424,13 +467,15 @@ const LearnJavaScript = () => {
                     </h3>
                     <p className="text-gray-300">{chapters[activeChapter].introduction}</p>
                   </div>
+
                   <div className="bg-gray-900/50 rounded-xl p-6">
                     <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
                       <Info className="w-5 h-5 text-blue-400" />
                       Explanation
                     </h3>
-                    <p className="text-gray-300">{chapters[activeChapter].explanation}</p>
+                    <p className="text-gray-300 whitespace-pre-wrap">{chapters[activeChapter].explanation}</p>
                   </div>
+
                   <div className="bg-gray-900/50 rounded-xl p-6">
                     <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
                       <Terminal className="w-5 h-5 text-green-400" />
@@ -443,34 +488,64 @@ const LearnJavaScript = () => {
                     </div>
                   </div>
 
+                  {/* Code Editor Section */}
                   <div className="bg-gray-900/50 rounded-xl p-6">
                     <h3 className="flex items-center gap-2 text-lg font-semibold mb-4">
                       <Code className="w-5 h-5 text-violet-400" />
                       Challenge
                     </h3>
                     <p className="text-gray-300 mb-4">{chapters[activeChapter].problemStatement}</p>
-                    
-                    <Editor
-                      height="300px"
-                      language="javascript"
-                      value={code}
-                      onChange={setCode}
-                      theme="vs-dark"
-                      className="rounded-lg overflow-hidden"
-                      options={{
-                        minimap: { enabled: false },
-                        fontSize: 14,
-                        padding: { top: 20 },
-                      }}
-                    />
-
+                    <div className="space-y-2">
+                    <label className="block text-gray-300 font-medium">
+                        Programming Language
+                    </label>
+                    <select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-900/50 text-gray-100 rounded-xl border border-gray-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-all"
+                    >
+                        
+                        <option value="javascript">JavaScript</option>
+                        
+                    </select>
+                </div>
+                    <div className="mt-4 rounded-xl overflow-hidden border border-gray-800">
+                      <Editor
+                        height="400px"
+                        language="javascript"
+                        value={code}
+                        onChange={setCode}
+                        theme="vs-dark"
+                        options={{
+                          fontSize: 14,
+                          minimap: { enabled: false },
+                          scrollBeyondLastLine: false,
+                          padding: { top: 16, bottom: 16 },
+                        }}
+                      />
+                    </div>
+                         <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Terminal className="w-5 h-5 text-blue-400" />
+                                                <label className="text-gray-300 font-medium">
+                                                    Program Input (stdin)
+                                                </label>
+                                            </div>
+                                            <textarea
+                                                value={stdin}
+                                                onChange={(e) => setStdin(e.target.value)}
+                                                placeholder="Enter input for your program..."
+                                                className="w-full px-4 py-3 bg-gray-900/50 text-gray-100 rounded-xl border border-gray-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-all min-h-[100px]"
+                                            />
+                                        </div>
                     <div className="flex gap-4 mt-4">
                       <button
-                        onClick={() => executeCode(code)}
-                        className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-violet-600 to-blue-600 rounded-lg text-white hover:opacity-90 transition-all hover:scale-105"
+                        onClick={executeCode}
+                        disabled={isExecuting}
+                        className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg text-white hover:opacity-90 transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
                         <Play className="w-4 h-4" />
-                        Run Code
+                        {isExecuting ? "Running..." : "Run Code"}
                       </button>
 
                       <button
@@ -490,12 +565,23 @@ const LearnJavaScript = () => {
                       </button>
                     </div>
 
-                    {output && (
-                      <div className="mt-6">
-                        <h4 className="font-semibold text-white mb-2">Output:</h4>
-                        <div className="bg-black/50 rounded-lg p-4">
-                          <pre className="text-gray-300">{output}</pre>
+                    {/* Output Section */}
+                    {(output || executionError) && (
+                      <div className="mt-6 space-y-4">
+                        <div className="flex items-center gap-2">
+                          <Terminal className="w-5 h-5 text-green-400" />
+                          <h4 className="font-semibold text-white">Output:</h4>
                         </div>
+                        
+                        {executionError && (
+                          <div className="p-4 bg-red-900/30 rounded-xl border border-red-800 text-red-300">
+                            {executionError}
+                          </div>
+                        )}
+                        
+                        <div className="bg-black/50 rounded-lg p-4 max-h-[200px] overflow-auto">
+                          <pre className="text-gray-300 whitespace-pre-wrap">{output}</pre>
+                          </div>
                       </div>
                     )}
                   </div>

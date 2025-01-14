@@ -1,23 +1,61 @@
 import React, { useState } from "react";
-import axios from "axios";
 import { Editor } from "@monaco-editor/react";
 import { Play, Code, Lightbulb, Terminal } from "lucide-react";
 
-function CodeEditor({ problem }) {
+const CodeEditor = ({ problem }) => {
     const [code, setCode] = useState("");
     const [language, setLanguage] = useState("python");
+    const [stdin, setStdin] = useState("");
     const [output, setOutput] = useState("");
+    const [executionError, setExecutionError] = useState("");
     const [suggestions, setSuggestions] = useState("");
     const [isExecuting, setIsExecuting] = useState(false);
     const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
 
     const executeCode = async () => {
         setIsExecuting(true);
+        setExecutionError("");
+        setOutput("");
+        
         try {
-            const response = await axios.post("http://127.0.0.1:5000/execute_code", { language, code });
-            setOutput(response.data.output || "No output from the code.");
+            const response = await fetch("http://127.0.0.1:5000/execute_code", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ 
+                    language, 
+                    code,
+                    stdin 
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Execution failed");
+            }
+
+            // Format the output
+            let formattedOutput = "";
+            
+            if (data.stdout) {
+                formattedOutput += `Program Output:\n${data.stdout}\n`;
+            }
+            
+            if (data.stderr) {
+                formattedOutput += `\nErrors/Warnings:\n${data.stderr}\n`;
+            }
+
+            if (data.code !== 0) {
+                setExecutionError(`Program exited with code ${data.code}`);
+            }
+
+            setOutput(formattedOutput || "Program executed with no output");
+
         } catch (error) {
-            alert("Code execution failed");
+            setExecutionError(error.message);
+            console.error("Execution error:", error);
         } finally {
             setIsExecuting(false);
         }
@@ -26,13 +64,25 @@ function CodeEditor({ problem }) {
     const suggestImprovements = async () => {
         setIsGeneratingSuggestions(true);
         try {
-            const response = await axios.post("http://127.0.0.1:5000/suggest_improvement", {
-                code,
-                problem_data: problem,
+            const response = await fetch("http://127.0.0.1:5000/suggest_improvement", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    code,
+                    problem_data: problem,
+                })
             });
-            setSuggestions(response.data);
+            
+            if (!response.ok) {
+                throw new Error("Failed to generate suggestions");
+            }
+            
+            const data = await response.text();
+            setSuggestions(data);
         } catch (error) {
-            alert("Failed to generate suggestions");
+            setSuggestions("Failed to generate suggestions: " + error.message);
         } finally {
             setIsGeneratingSuggestions(false);
         }
@@ -63,7 +113,6 @@ function CodeEditor({ problem }) {
                         <option value="javascript">JavaScript</option>
                         <option value="java">Java</option>
                         <option value="cpp">C++</option>
-                        <option value="csharp">C#</option>
                     </select>
                 </div>
 
@@ -80,6 +129,21 @@ function CodeEditor({ problem }) {
                             scrollBeyondLastLine: false,
                             padding: { top: 16, bottom: 16 },
                         }}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                        <Terminal className="w-5 h-5 text-blue-400" />
+                        <label className="text-gray-300 font-medium">
+                            Program Input (stdin)
+                        </label>
+                    </div>
+                    <textarea
+                        value={stdin}
+                        onChange={(e) => setStdin(e.target.value)}
+                        placeholder="Enter input for your program..."
+                        className="w-full px-4 py-3 bg-gray-900/50 text-gray-100 rounded-xl border border-gray-800 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 focus:outline-none transition-all min-h-[100px]"
                     />
                 </div>
 
@@ -115,6 +179,11 @@ function CodeEditor({ problem }) {
                                 Output
                             </h3>
                         </div>
+                        {executionError && (
+                            <div className="p-4 bg-red-900/30 rounded-xl border border-red-800 text-red-300 mb-4">
+                                {executionError}
+                            </div>
+                        )}
                         <pre className="p-4 bg-black/40 rounded-xl border border-gray-800 text-gray-300 min-h-[100px] max-h-[200px] overflow-auto">
                             {output || "No output yet."}
                         </pre>
@@ -135,6 +204,6 @@ function CodeEditor({ problem }) {
             </div>
         </div>
     );
-}
+};
 
 export default CodeEditor;

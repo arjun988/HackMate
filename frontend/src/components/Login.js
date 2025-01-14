@@ -17,6 +17,7 @@ function Login({ onLogin }) {
             const response = await axios.post("http://127.0.0.1:5000/login", { username, password });
             if (response.status === 200) {
                 localStorage.setItem('auth_token', response.data.token);
+                localStorage.setItem('email', username);
                 localStorage.setItem('isLoggedIn', true);
                 onLogin();
                 navigate("/");

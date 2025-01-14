@@ -4,6 +4,11 @@ import Login from "./components/Login";
 import Signup from "./components/Signup";
 import MainPage from "./components/MainPage";
 import LearnJavaScript from "./components/LearnJavascript"; // Import Learn page
+import JavaScriptProblemSet from "./components/JavascriptProblemSet";
+import DSAPage from "./components/DSAPage";
+import Code from "./components/Code";
+import LearnSQL from "./components/LearnSQL";
+import ProfilePage from "./components/ProfilePage";
 
 function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -43,6 +48,11 @@ function App() {
                     />
                     {/* Add route for Learn page */}
                     <Route path="/learn" element={<LearnJavaScript />} />
+                    <Route path="/javascriptProblems" element={<JavaScriptProblemSet />} />
+                    <Route path="/DSA" element={<DSAPage/>} />
+                    <Route path="/code" element={<Code/>} />
+                    <Route path="/LearnSQL" element={<LearnSQL/>} />
+                    <Route path="/Profile" element={<ProfilePage/>} />
                 </Routes>
             </div>
         </Router>
