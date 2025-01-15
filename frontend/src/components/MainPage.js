@@ -184,12 +184,12 @@ function MainPage() {
         </div>
 
         {/* Main Workspace */}
-        <div className="flex-1 overflow-hidden p-6">
-          <div className="h-full flex flex-col lg:flex-row gap-6">
+        <div className="flex-1 overflow-auto p-6">
+          <div className="h-full min-h-[calc(100vh-13rem)] flex flex-col lg:flex-row gap-6">
             {/* Problem Statement */}
             <div className="lg:w-1/2 bg-black/40 backdrop-blur-xl rounded-2xl 
-              border border-gray-800/50 overflow-hidden">
-              <div className="p-6">
+              border border-gray-800/50 overflow-hidden flex flex-col">
+              <div className="p-6 flex-1 overflow-auto ">
                 <h3 className="text-xl font-semibold text-white mb-6">
                   Problem Statement
                 </h3>
